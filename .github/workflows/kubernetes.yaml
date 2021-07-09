@@ -1,0 +1,129 @@
+name: Security Scan 
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Application_scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout 🛎️
+      uses: actions/checkout@v2
+    - name : Performing Sca 
+      working-directory: app 
+      continue-on-error: true
+      run : |
+        pip install safety PyJWT==1.5.2 requests==2.18.1 urllib3==1.21.1 itsdangerous==0.24 Jinja2==2.9.6
+        safety check --json >> safety_result.json
+    - uses: actions/upload-artifact@v1
+      with:
+        name: Sca_Report
+        path: ${{ github.workspace }}/app/safety_result.json
+      name: 'Upload Sca Report'
+    - name : Installing the bandit tool
+      continue-on-error: true
+      run : |
+        ls 
+        pip install bandit
+        bandit -r -f json -o bandit_result.json app/ 
+    - uses: actions/upload-artifact@v1
+      with:
+        name: SAST_Report 
+        path: ${{ github.workspace }}/bandit_result.json
+      name: 'Upload SAST Report'
+  Docker-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout 🛎️
+      uses: actions/checkout@v2
+    - name : Performing  Hadolint Scan
+      continue-on-error: true
+      run : |
+        docker run --rm -i hadolint/hadolint < Dockerfile  >> hadolint-results.txt
+    - uses: actions/upload-artifact@v1
+      with:
+        name: Hadolint_Report
+        path: ${{ github.workspace }}/hadolint-results.txt 
+      name: 'Upload Hadolint Report'
+    - name : Performing  Trivy Scan
+      continue-on-error: true
+      run : |
+        wget https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.deb
+        sudo dpkg -i trivy_0.18.3_Linux-64bit.deb
+        docker build -t test .
+        trivy image test >> trivy_result.txt
+          - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v1
+      with:
+        name: Trivy_Result 
+        path: ${{ github.workspace }}/trivy_result.txt
+      name: 'Upload Trivy Report'
+  Kubernetes-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout 🛎️
+      uses: actions/checkout@v2
+    - name: Checkov scan 
+      continue-on-error: true
+      run : |
+        pip3 install checkov
+        checkov -d deployment  >> checkov.txt 
+    - uses: actions/upload-artifact@v1
+      with:
+        name: Checkov_Result 
+        path: ${{ github.workspace }}/checkov.txt 
+      name: 'Upload Checkov Report'
+    - name : Performing  KubeSec Scan 
+      continue-on-error: true
+      working-directory: deployment 
+      run : |
+         docker run -i kubesec/kubesec:512c5e0 scan /dev/stdin <  deployment.yaml  >> kubesec-result.txt
+    - uses: actions/upload-artifact@v1
+      with:
+        name: KubeSec_Report
+        path: ${{ github.workspace }}/deployment/kubesec-result.txt
+      name: 'Upload KubeSec Result'
+  Docker-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+        
+      - name: Docker meta
+        id: docker_meta
+        uses: crazy-max/ghaction-docker-meta@v1
+        with:
+          images: ghcr.io/Joshuawe45/argo  ## This need to be replaced  with ghcr.io/Username/image-name
+          tag-sha: true
+          tag-edge: false
+          tag-latest: true
+          
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        
+      - name: Login to GHCR
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build image
+        uses: docker/build-push-action@v2
+        with:
+          tags: ${{ steps.docker_meta.outputs.tags }} 
+          file: ./Dockerfile
+          
+          
+      - name: Push image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          file: ./Dockerfile
+        
