@@ -42,13 +42,6 @@ kind: Pod
 metadata:
   name: secure-flask
   namespace: psp
-  annotations:
-    seccomp.security.alpha.kubernetes.io/allowedProfileNames: docker/default
-    apparmor.security.beta.kubernetes.io/allowedProfileNames: runtime/default
-    seccomp.security.alpha.kubernetes.io/defaultProfileName: docker/default
-    apparmor.security.beta.kubernetes.io/defaultProfileName: runtime/default
-    container.apparmor.security.beta.kubernetes.io/secure-vul-flask: localhost/k8s-vul-flask-redis-armor
-    seccomp.security.alpha.kubernetes.io/pod: runtime/default
   labels:
     app: secure-flask
 spec:
