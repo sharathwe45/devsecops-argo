@@ -97,5 +97,5 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          repository: <user-name>/vulnerable-flask-application 
+          repository: sharathwe45/vulnerable-flask-application 
           tags: latest
