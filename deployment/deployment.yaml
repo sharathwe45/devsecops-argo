@@ -53,7 +53,7 @@ spec:
     runAsNonRoot: true
   containers:
     - name: secure-vul-flask
-      image: <image-name>
+      image: ghcr.io/sharathwe45/vulnerable-flask-application:latest
       imagePullPolicy: Always
       securityContext:
         allowPrivilegeEscalation: false
